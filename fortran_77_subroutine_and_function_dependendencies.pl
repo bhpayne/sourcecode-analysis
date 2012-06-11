@@ -2,8 +2,8 @@
 # use strict;
 # use warnings;
 
-# perl fortran_77_subroutine_and_functiondependendencies.pl > graphme.gv
-# neato -Tpng graphme.gv > subroutine_map.png
+# perl fortran_77_subroutine_and_functiondependendencies.pl > graphme.dot
+# neato -Tpng graphme.dot > subroutine_and_function_graph.png
 
 # this script assumes 
 #   bash fortran_77_create_list_of_common_sub_and_func.sh
@@ -27,6 +27,10 @@ $foldr="Allison_transfer_double_capture.mpi";
 # done
 
 print "digraph F77Dependencies {\n";
+print "label=\"$foldr\"; \n";
+# http://stackoverflow.com/questions/3428448/reducing-graph-size-in-graphviz
+print "ranksep=1.25; \n";
+print "nodes[nodesep=0.75]; \n";
 
 print "main [fillcolor=red, style=\"filled\", shape=circle]";
 
@@ -35,11 +39,14 @@ while (my $each_subrtn = <ALL_SUBROUTINES>) {
   chomp($each_subrtn);
   print "$each_subrtn [shape=box]\n"; # http://www.graphviz.org/doc/info/shapes.html
 }
+close ALL_SUBROUTINES;
+
 open ALL_FUNCTIONS, "<$foldr/list_of_functions.log" or die $!;
 while (my $each_func = <ALL_FUNCTIONS>) {
   chomp($each_func);
   print "$each_func [fillcolor=yellow, style=\"rounded,filled\", shape=diamond]\n";
 }
+close ALL_FUNCTIONS;
 
 # main calls subroutine
 open MAIN_FILE, "<$foldr/main.f" or die $!;
@@ -65,8 +72,10 @@ while (my $main_line = <MAIN_FILE>) {
 #         print "$subrtn_list is not the same as $this_line\n";
       }
     }
+    close LIST_OF_SUBROUTINES;
   }
 }
+close MAIN_FILE;
 
 # subroutine calls subroutine
 open ALL_SUBROUTINES, "<$foldr/list_of_subroutines.log" or die $!;
@@ -96,9 +105,12 @@ while (my $each_subrtn = <ALL_SUBROUTINES>) {
   #         print "$subrtn_list is not the same as $this_line\n";
         }
       }
+      close LIST_OF_SUBROUTINES;
     }
   }
+  close SUBROUTINE_FILE;
 }
+close ALL_SUBROUTINES;
 
 # function calls subroutine
 open ALL_FUNCTIONS, "<$foldr/list_of_functions.log" or die $!;
@@ -128,13 +140,60 @@ while (my $each_func = <ALL_FUNCTIONS>) {
   #         print "$subrtn_list is not the same as $this_line\n";
         }
       }
+      close LIST_OF_SUBROUTINES;
     }
   }
+  close FUNCTION_FILE;
 }
+close ALL_FUNCTIONS;
 
-# to add: 
-# main -> function
-# function -> function
 # subroutine -> function
+open ALL_SUBROUTINES, "<$foldr/list_of_subroutines.log" or die $!;
+while (my $each_subrtn = <ALL_SUBROUTINES>) {
+  chomp($each_subrtn);
+  #print "$each_subrtn asdf\n";
+  open SUBROUTINE_FILE, "<$foldr/subroutine_$each_subrtn.f" or die $!;
+  while (my $subrtn_line = <SUBROUTINE_FILE>) {
+    chomp($subrtn_line);
+    #print "$subrtn_line\n";
+
+    open ALL_FUNCTIONS, "<$foldr/list_of_functions.log" or die $!;
+    while (my $this_func = <ALL_FUNCTIONS>) {
+      chomp($this_func);
+
+      if ($subrtn_line =~ /(.*)[= ]*$this_func\(/i) {
+            print "$each_subrtn -> $this_func\n";
+      }
+    }
+    close ALL_FUNCTIONS;
+  }
+  close SUBROUTINE_FILE;
+}
+close ALL_SUBROUTINES;
+
+# function -> function
+open ALL_FUNCTIONS, "<$foldr/list_of_functions.log" or die $!;
+while (my $each_func = <ALL_FUNCTIONS>) {
+  chomp($each_func);
+  #print "$each_func asdf\n";
+  open FUNCTION_FILE, "<$foldr/function_$each_func.f" or die $!;
+  while (my $func_line = <FUNCTION_FILE>) {
+    chomp($func_line);
+    #print "$func_line\n";
+
+    open THESE_FUNCTIONS, "<$foldr/list_of_functions.log" or die $!;
+    while (my $this_func = <THESE_FUNCTIONS>) {
+      chomp($this_func);
+
+      if ($func_line =~ /(.*)[= ]*$this_func\(/i) {
+            print "$each_func -> $this_func\n";
+      }
+    }
+    close ALL_FUNCTIONS;
+  }
+  close SUBROUTINE_FILE;
+}
+close ALL_FUNCTIONS;
+
 
 print "overlap=false\nfontsize=12;\n}\n";
