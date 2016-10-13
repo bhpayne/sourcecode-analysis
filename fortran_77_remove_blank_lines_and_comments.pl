@@ -1,5 +1,6 @@
 #!/usr/local/bin/perl
-
+use strict;
+use warnings;
 # 20120523
 # Ben Payne
 # remove blank lines and commented lines from Fortran 77
@@ -23,13 +24,15 @@ while(<STDIN>) { # read each line from input
   # remove trailing tabs and spaces
   $line =~ s/[ \t]*$//ig; # http://sed.sourceforge.net/sed1line.txt
 
+  $line =~ s/\x0D$//; # ^M = ctrl+v+m
+
   # remove lines which start with c, C, *, or a new line
   if (/^[!cC\*].*/) {
     next;# skips to the next line, so won't print
   }
  
   # remove trailing comments on remaining lines
-  $line =~ s/(!.*)//ig;
+  $line =~ s/(.*)(!.*)//ig;
 
   # doesn't seem to be working
   if (/^$/) { # blank line

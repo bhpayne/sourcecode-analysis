@@ -1,7 +1,7 @@
-20120610
+20120523
 Ben Payne
 
-These scripts are to manipulate monolithic Fortran 77 files. 
+These scripts are to manipulate monolithic Fortran 77 and Fortran 90 files. 
 
 Uses bash, perl, python, GraphViz
 

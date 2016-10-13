@@ -2,8 +2,19 @@
 # use strict;
 # use warnings;
 
-# perl fortran_77_subroutine_and_functiondependendencies.pl > graphme.dot
-# neato -Tpng graphme.dot > subroutine_and_function_graph.png
+=for comment
+perl fortran_77_subroutine_and_function_dependendencies.pl > subroutine_and_function_graph.dot
+neato -Tpng subroutine_and_function_graph.dot > subroutine_and_function_graph_neato.png
+dot -Tpng subroutine_and_function_graph.dot > subroutine_and_function_graph_dot.png
+twopi -Tpng subroutine_and_function_graph.dot > subroutine_and_function_graph_twopi.png
+circo -Tpng subroutine_and_function_graph.dot > subroutine_and_function_graph_circo.png
+fdp -Tpng subroutine_and_function_graph.dot > subroutine_and_function_graph_fdp.png
+=cut
+
+# hg clone https://bitbucket.org/dirkbaechle/dottoxml
+# cd dottoxml/src
+# python dottoxml.py ../subroutine_and_function_graph.dot ../out.graphml
+# use yed
 
 # this script assumes 
 #   bash fortran_77_create_list_of_common_sub_and_func.sh
@@ -14,8 +25,14 @@
 # function_*
 # subroutine_*
 
-$foldr="Allison_transfer_double_capture.mpi";
-#foldr=Esam_molecule_4dw.mpi
+$foldr=$ARGV[0];
+# note: it would be nice to check that the number of arguments is 1 (using $#ARGV)
+#$foldr="Hari_asymmetric_coplane.mpi";
+#$foldr="Ola_orient.mpi";
+#$foldr="Esam_molecule_4dw.mpi";
+#$foldr="Adam_single_orientation.mpi";
+#$foldr="Allison_transfer_double_capture.mpi";
+#foldr="Esam_molecule_4dw.mpi";
 
 # for file in $foldr/function_*; do
 #   #echo $file
@@ -31,6 +48,7 @@ print "label=\"$foldr\"; \n";
 # http://stackoverflow.com/questions/3428448/reducing-graph-size-in-graphviz
 print "ranksep=1.25; \n";
 print "nodes[nodesep=0.75]; \n";
+#print "graph [ splines = false ]; \n"; # option to combine edges
 
 print "main [fillcolor=red, style=\"filled\", shape=circle]";
 
@@ -60,6 +78,8 @@ while (my $main_line = <MAIN_FILE>) {
     # after completing search/replace, output result
     #print "subroutine contains a call to $this_line\n";
 
+    my $boolean_found=0; 
+
     # http://www.perlmonks.org/?node_id=887141
     # You have to reset the second file-handle so it starts reading from the very beginning for each step of outer loop
     open LIST_OF_SUBROUTINES, "<$foldr/list_of_subroutines.log" or die $!;
@@ -71,6 +91,11 @@ while (my $main_line = <MAIN_FILE>) {
 #       } else {
 #         print "$subrtn_list is not the same as $this_line\n";
       }
+      $boolean_found=1;
+    }
+    if ($boolean_found == 0) {
+      # found a subroutine call which wasn't in list of subroutine
+      print "PROBLEM WITH $this_line\n";
     }
     close LIST_OF_SUBROUTINES;
   }
