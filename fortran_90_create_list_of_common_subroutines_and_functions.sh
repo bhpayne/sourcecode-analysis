@@ -12,27 +12,36 @@ foldr2=transfer_single_capture.mpi
 # foldr_fortran=Uttam_Chowdhury/project_transfer_excitation/plane_wave_hyllerass_plane_wave/transfer.mpi.f
 
 mkdir $foldr1
-perl fortran_77_remove_blank_lines_and_comments.pl < ../../${foldr1_fortran} > out.f
-
-perl fortran_77_find_subroutines_and_functions.pl < out.f
+perl fortran_remove_blank_lines_and_comments.pl < ../../${foldr1_fortran} > no_comments.f
+perl fortran_90_find_modules.pl < no_comments.f # output is no_modules.f
+perl fortran_find_subroutines_and_functions.pl < no_modules.f
 mv function_* ${foldr1}/
 mv subroutine_* ${foldr1}/
 mv main.f ${foldr1}/
 mv list_of_subroutines.log ${foldr1}/
 mv list_of_functions.log ${foldr1}/
-rm out.f  
+mv list_of_modules.log ${foldr1}/
+# perl fortran_find_subroutines_and_functions.pl < module_MyMath.f
+# mmv 'subroutine_*.f' 'module_MyMath_subroutine_#1.f'
+# mmv 'function_*.f' 'module_MyMath_function_#1.f'
+# perl fortran_find_subroutines_and_functions.pl < module_MyBasisSet.f
+# mmv 'subroutine_*.f' 'module_MyBasisSet_subroutine_#1.f'
+# mmv 'function_*.f' 'module_MyBasisSet_function_#1.f'
 sort ${foldr1}/list_of_subroutines.log > ${foldr1}/list_of_subroutines_sorted.log 
 sort ${foldr1}/list_of_functions.log > ${foldr1}/list_of_functions_sorted.log 
 
+
+
 mkdir $foldr2
-perl fortran_77_remove_blank_lines_and_comments.pl < ../../${foldr2_fortran} > out.f
-perl fortran_77_find_subroutines_and_functions.pl < out.f
+perl fortran_remove_blank_lines_and_comments.pl < ../../${foldr2_fortran} > no_comments.f
+perl fortran_90_find_modules.pl < no_comments.f # output is no_modules.f
+perl fortran_find_subroutines_and_functions.pl < no_modules.f
 mv function_* ${foldr2}/
 mv subroutine_* ${foldr2}/
 mv main.f ${foldr2}/
 mv list_of_subroutines.log ${foldr2}/
 mv list_of_functions.log ${foldr2}/
-rm out.f 
+mv list_of_modules.log ${foldr1}/
 sort ${foldr2}/list_of_subroutines.log > ${foldr2}/list_of_subroutines_sorted.log 
 sort ${foldr2}/list_of_functions.log > ${foldr2}/list_of_functions_sorted.log 
 
