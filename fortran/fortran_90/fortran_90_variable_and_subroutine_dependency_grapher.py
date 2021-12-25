@@ -98,7 +98,7 @@ def formatInputF77(inputfile,allLines):
       andFound=0 # false
       if line != '':
         allLines.append(line)
-        print line
+        print(line)
       #print ("line %d: "+line) % (lineIndx) # show which line word is on
     line = f.readline()
   f.close()
@@ -124,7 +124,7 @@ def findAllWords(inputfile,allWords,word):
     if re.search(findme,line,re.IGNORECASE):
       #print ("line %d: "+line) % (lineIndx) # show which line word is on
       if re.search('^end',line):
-        print
+        pass
       else:
         findEnd='^end '+word+'[a-zA-Z0-9\*_: ]*'
         if word.lower() != 'call':
@@ -152,8 +152,8 @@ def findCorrespondingEnd(inputfile,startline,word):
       endline=lineIndx+startline
       break
   if endline==0:
-    print 'ERROR: end line not found:',word,' starting from',startline
-    print findInHere[0]
+    print('ERROR: end line not found:',word,' starting from',startline)
+    print(findInHere[0])
   return endline
 
 def parseEachItem(typeFCS,item):
