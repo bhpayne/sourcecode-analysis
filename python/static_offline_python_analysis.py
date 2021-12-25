@@ -12,6 +12,8 @@ CAVEAT: This script does not recursively assess classes and functions.
 The current implementation is limited to modules, top-level classes, top-level functions, and functions within classes.
 For example, functions within functions are not assessed.
 
+CAVEAT: this script breaks if a Python2 file is passed in
+
 This code is similar to
 https://github.com/YoloSwagTeam/ast2json/blob/master/ast2json/ast2json.py
 except I don't keep the body of the function or the module or the class.
@@ -112,7 +114,15 @@ def analysis_of_functions(tree) -> dict:
         # functions_dict[func.name]['args'] = ast.dump(func.args)
         #posonlyargs=[], args=[arg(arg='body')], kwonlyargs=[], kw_defaults=[], defaults
         functions_dict[func.name]['posonlyargs'] = [ast.dump(_) for _ in func.args.posonlyargs]
-        functions_dict[func.name]['args'] = [ast.dump(this_arg) for this_arg in func.args.args]
+        args_dict = {}
+        for this_arg in func.args.args:
+            #print(this_arg.arg) # argument name is not important since argument names can change without breaking the API
+            #print(this_arg.annotation.id) # variable type
+            try:
+                args_dict[this_arg.arg] = this_arg.annotation.id
+            except AttributeError:
+                args_dict[this_arg.arg] = None # argument type not specified
+        functions_dict[func.name]['args'] = args_dict
         functions_dict[func.name]['kwonlyargs'] = [ast.dump(_) for _ in func.args.kwonlyargs]
         functions_dict[func.name]['kw_defaults'] = [ast.dump(_) for _ in func.args.kw_defaults]
         functions_dict[func.name]['defaults'] = [ast.dump(_) for _ in func.args.defaults]
@@ -172,7 +182,10 @@ if __name__ == "__main__":
 
         elif os.path.isdir(file_or_folder):
             print("folder:",file_or_folder)
-            for filename in glob.glob(file_or_folder+"/**/*.py"):
+            # https://stackoverflow.com/questions/2186525/how-to-use-glob-to-find-files-recursively
+            list_of_py_files = glob.glob(file_or_folder+"/**/*.py", recursive=True)
+            print("all py files in folder:",list_of_py_files)
+            for filename in list_of_py_files:
                 print("filename in folder:",filename)
                 assessment_dict[filename] = assess_file(filename)
         else:
