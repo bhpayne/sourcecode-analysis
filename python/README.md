@@ -1,6 +1,21 @@
-# source code analysis
+# Static (offline) source code analysis of Python
 
-## Dynamic (requires execution) profiling and tracing
+The file `static_offline_python_analysis.py` consumes one or more folders or files
+and then analyses the API of each .py file.
+
+`static_offline_python_analysis.py` uses Python's Abstract Syntax Tree (AST);
+see <https://docs.python.org/3/library/ast.html>  
+and <https://greentreesnakes.readthedocs.io/en/latest/>
+
+
+The file `static_offline_python_analysis.py` produces a JSON file.
+The JSON file could be used to compare with previous snapshots using `jsondiff`; see
+<https://stackoverflow.com/a/39663267/1164295>
+
+A report about the JSON file can generated using `analyze_json.py`.
+
+
+# Survey of Dynamic (requires execution) profiling and tracing for Python
 
 <https://pycallgraph.readthedocs.io/en/master/> - creates call graph visualizations for Python applications.
 
@@ -16,14 +31,4 @@ See <https://nedbatchelder.com/text/trace-function.html> for an explanation of c
 
 Almost all of those capabilities rely on `sys.settrace()`. For an overview, see <https://pymotw.com/3/sys/tracing.html>
 
-Problem: `sys.settrace()` and `inspect` both rely on running the code. If there are unresolved dependencies, the module won't import. 
-
-## Static (offline) analysis
-
-<https://stackoverflow.com/a/31005891/1164295> led me to
-
-### Python's Abstract Syntax Tree (AST)
-
-<https://docs.python.org/3/library/ast.html>  
-
-<https://greentreesnakes.readthedocs.io/en/latest/>
+Problem: `sys.settrace()` and `inspect` both rely on running the code. If there are unresolved dependencies, the module won't import.

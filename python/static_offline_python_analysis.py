@@ -8,53 +8,31 @@ WARNING: this script does NOT work with python 3.7
 This file DOES work with Python 3.9
 The cause is changes in https://docs.python.org/3/library/ast.html that occurred in 3.8 with ast.Str
 
-This is similar to
+CAVEAT: This script does not recursively assess classes and functions.
+The current implementation is limited to modules, top-level classes, top-level functions, and functions within classes.
+For example, functions within functions are not assessed.
+
+This code is similar to
 https://github.com/YoloSwagTeam/ast2json/blob/master/ast2json/ast2json.py
 except I don't keep the body of the function or the module or the class.
 
-To troubleshoot, I find the following snippet useful:
+To troubleshoot, the following snippet is useful:
 import ast
-with open('find_missing_docstring.py','r') as file_handle:
-    tree = ast.parse(file_handle.read(), filename='find_missing_docstring.py')
+with open('static_offline_python_analysis.py','r') as file_handle:
+    tree = ast.parse(file_handle.read(), filename='static_offline_python_analysis.py')
 """
 
-import ast # https://docs.python.org/3/library/ast.html
 import sys
+MIN_PYTHON = (3, 8) # https://stackoverflow.com/a/57446368/1164295
+assert sys.version_info >= MIN_PYTHON, sys.exit("ERROR: Minimm version NOT met; requires Python "+str('.'.join([str(n) for n in MIN_PYTHON]))+" or newer.")
+
+import subprocess
+import ast # https://docs.python.org/3/library/ast.html
 import glob
 import os
 import argparse # https://realpython.com/python-command-line-arguments/#argparse
 import json
 
-
-# https://realpython.com/python3-object-oriented-programming/
-class Dog:
-    pass
-
-class Cat:
-    # Class attribute
-    species = "Canis familiaris"
-
-    def __init__(self, name, age):
-        self.name = name
-        self.age = age
-
-    # Instance method
-    def description(self):
-        return f"{self.name} is {self.age} years old"
-
-    # Another instance method
-    def speak(self, sound):
-        return f"{self.name} says {sound}"
-
-class JackRussellTerrier(Cat):
-    """
-    great!
-    """
-    def speak(self, sound="Arf"):
-        return f"{self.name} says {sound}"
-
-class Dachshund(Dog):
-    pass
 
 
 def init_argparse() -> argparse.ArgumentParser:
@@ -62,7 +40,7 @@ def init_argparse() -> argparse.ArgumentParser:
     from https://realpython.com/python-command-line-arguments/#argparse
     """
     parser = argparse.ArgumentParser(
-        usage="%(prog)s [FILE or FOLDER]",
+        usage="%(prog)s [one or more FILEs or FOLDERs]",
         description="determine whether modules, classes, and functions have a docstring"
     )
     parser.add_argument(
@@ -73,25 +51,31 @@ def init_argparse() -> argparse.ArgumentParser:
     return parser
 
 def top_level_classes(body):
+    """
+    find classes in the AST body
+    """
     return (f for f in body if isinstance(f, ast.ClassDef))
 
 def top_level_functions(body):
+    """
+    find functions in the AST body
+    """
     return (f for f in body if isinstance(f, ast.FunctionDef))
 
 def top_level_comments(body):
     return (f for f in body if isinstance(f, ast.Expr)) # specific to Python 3.9+
 
 
-def parse_ast_for_filename(filename: str):
+def parse_ast_for_filename(filename: str) -> str:
     """
     >>> parse_ast_for_filename('file.py')
     """
     with open(filename, "rt") as file:
         return ast.parse(file.read(), filename=filename)
 
-def docstring_in_module(tree) -> dict:
+def analysis_of_module(tree) -> dict:
     """
-    >>> docstring_in_module
+    >>> analysis_of_module(tree)
     """
     for exp in top_level_comments(tree.body):
         if isinstance(exp.value, ast.Constant): # this skips commented lines and only finds module-level docstrings
@@ -100,9 +84,9 @@ def docstring_in_module(tree) -> dict:
             return {'has docstring':True} # has module-level docstring
     return {'has docstring':False}
 
-def docstring_in_classes(tree) -> dict:
+def analysis_of_classes(tree) -> dict:
     """
-    >>> docstring_in_classes(tree)
+    >>> analysis_of_classes(tree)
     """
     classes_dict = {}
     for cl in top_level_classes(tree.body):
@@ -115,17 +99,24 @@ def docstring_in_classes(tree) -> dict:
             classes_dict[cl.name]['has docstring']=False
 
         # functions within that class
-        classes_dict[cl.name]['functions'] = docstring_in_functions(cl)
+        classes_dict[cl.name]['functions'] = analysis_of_functions(cl)
     return classes_dict
 
-def docstring_in_functions(tree) -> list:
+def analysis_of_functions(tree) -> dict:
     """
-    >>> docstring_in_functions(tree)
+    >>> analysis_of_functions(tree)
     """
     functions_dict = {}
     for func in top_level_functions(tree.body):
         functions_dict[func.name]={}
-        functions_dict[func.name]['args'] = ast.dump(func.args)
+        # functions_dict[func.name]['args'] = ast.dump(func.args)
+        #posonlyargs=[], args=[arg(arg='body')], kwonlyargs=[], kw_defaults=[], defaults
+        functions_dict[func.name]['posonlyargs'] = [ast.dump(_) for _ in func.args.posonlyargs]
+        functions_dict[func.name]['args'] = [ast.dump(this_arg) for this_arg in func.args.args]
+        functions_dict[func.name]['kwonlyargs'] = [ast.dump(_) for _ in func.args.kwonlyargs]
+        functions_dict[func.name]['kw_defaults'] = [ast.dump(_) for _ in func.args.kw_defaults]
+        functions_dict[func.name]['defaults'] = [ast.dump(_) for _ in func.args.defaults]
+
         functions_dict[func.name]['decorators'] = [ast.dump(_) for _ in func.decorator_list]
         try:
             functions_dict[func.name]['type comment'] = ast.dump(func.type_comment)
@@ -144,6 +135,23 @@ def docstring_in_functions(tree) -> list:
             functions_dict[func.name]['has docstring']=False
     return functions_dict
 
+def assess_file(filename: str) -> dict:
+    tree = parse_ast_for_filename(filename)
+    assessment_dict = {}
+    assessment_dict['module'] = analysis_of_module(tree)
+    assessment_dict['function'] = analysis_of_functions(tree)
+    assessment_dict['class'] = analysis_of_classes(tree)
+
+    # https://stackoverflow.com/questions/4760215/running-shell-command-and-capturing-the-output
+    result = subprocess.run(['python3',file_or_folder,'--help'],
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE)
+    help_output_str = result.stdout.decode('utf-8')
+    if len(help_output_str)>1:
+        assessment_dict['module']['has --help'] = help_output_str.split('\n')
+    else:
+        assessment_dict['module']['has --help'] = None
+    return assessment_dict
 
 if __name__ == "__main__":
 
@@ -151,8 +159,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if len(sys.argv)<2:
-        print("ERROR: You need to pass either a folder name or a filename as argument")
-        sys.exit(1)
+        sys.exit("ERROR: You need to pass either a folder name or a filename as argument")
 
     assessment_dict = {}
 
@@ -160,18 +167,14 @@ if __name__ == "__main__":
 
         # https://pythonexamples.org/python-check-if-path-is-file-or-directory/
         if os.path.isfile(file_or_folder):
-            tree = parse_ast_for_filename(file_or_folder)
-            assessment_dict[file_or_folder] = {}
-            assessment_dict[file_or_folder]['module'] = docstring_in_module(tree)
-            assessment_dict[file_or_folder]['function'] = docstring_in_functions(tree)
-            assessment_dict[file_or_folder]['class'] = docstring_in_classes(tree)
+            print("file:",file_or_folder)
+            assessment_dict[file_or_folder] = assess_file(file_or_folder)
 
         elif os.path.isdir(file_or_folder):
+            print("folder:",file_or_folder)
             for filename in glob.glob(file_or_folder+"/**/*.py"):
-                assessment_dict[file_or_folder] = {}
-
-                tree = parse_ast_for_filename(filename)
-                find_docstrings(tree, filename)
+                print("filename in folder:",filename)
+                assessment_dict[filename] = assess_file(filename)
         else:
             print(file_or_folder,"is neither a file nor a folder")
 
