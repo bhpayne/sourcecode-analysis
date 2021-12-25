@@ -175,7 +175,7 @@ if __name__ == "__main__":
         else:
             print(file_or_folder,"is neither a file nor a folder")
 
-    print(assessment_dict)
+#    print(assessment_dict)
     # if write to file,
     with open('result.json', 'w') as fp:
         json.dump(assessment_dict, fp, indent=4, sort_keys=True) # sort_keys enabled to create a consistent ordering that enables comparison between changes
