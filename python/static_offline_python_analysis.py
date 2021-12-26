@@ -17,11 +17,13 @@ CAVEAT: this script breaks if a Python2 file is passed in
 This code is similar to
 https://github.com/YoloSwagTeam/ast2json/blob/master/ast2json/ast2json.py
 except I don't keep the body of the function or the module or the class.
+--> If maintaining this code is burdensome; switch to "ast2json" and ignore the body
 
 To troubleshoot, the following snippet is useful:
 import ast
 with open('static_offline_python_analysis.py','r') as file_handle:
     tree = ast.parse(file_handle.read(), filename='static_offline_python_analysis.py')
+tree.body
 """
 
 import sys
@@ -34,7 +36,7 @@ import glob
 import os
 import argparse # https://realpython.com/python-command-line-arguments/#argparse
 import json
-
+from matplotlib import pyplot as plt
 
 
 def init_argparse() -> argparse.ArgumentParser:
@@ -64,9 +66,6 @@ def top_level_functions(body):
     """
     return (f for f in body if isinstance(f, ast.FunctionDef))
 
-def top_level_comments(body):
-    return (f for f in body if isinstance(f, ast.Expr)) # specific to Python 3.9+
-
 
 def parse_ast_for_filename(filename: str) -> str:
     """
@@ -79,12 +78,27 @@ def analysis_of_module(tree) -> dict:
     """
     >>> analysis_of_module(tree)
     """
-    for exp in top_level_comments(tree.body):
-        if isinstance(exp.value, ast.Constant): # this skips commented lines and only finds module-level docstrings
-            #print(exp.value.value)
-            #print("   ",filename, "has module-level docstring\n")
-            return {'has docstring':True} # has module-level docstring
-    return {'has docstring':False}
+    module_dict = {}
+    for entry in tree.body:
+        if isinstance(entry, ast.Expr): # specific to Python 3.9+
+            if isinstance(entry.value, ast.Constant): # this skips commented lines and only finds module-level docstrings
+                #print(entry.value.value)
+                #print("   ",filename, "has module-level docstring\n")
+                module_dict['has docstring']=True # has module-level docstring
+                break #  terminates the current loop
+            else:
+                module_dict['has docstring']=False
+            break #  terminates the current loop
+
+    list_of_imports = []
+    for entry in tree.body:
+        if isinstance(entry, ast.Import):
+            list_of_imports.append(entry.names[0].name)
+        if isinstance(entry, ast.ImportFrom):
+            list_of_imports.append(entry.module)
+
+    module_dict['imports'] = list_of_imports
+    return module_dict
 
 def analysis_of_classes(tree) -> dict:
     """
@@ -134,8 +148,8 @@ def analysis_of_functions(tree) -> dict:
             functions_dict[func.name]['type comment'] = None
         try:
             functions_dict[func.name]['returns'] = ast.dump(func.returns)
-        except TypeError:
-            functions_dict[func.name]['returns'] = None
+        except TypeError: # return type not specified
+            functions_dict[func.name]['returns'] = 'not specified'
         if isinstance(func.body[0], ast.Expr):
             if isinstance(func.body[0].value, ast.Constant):
                 #print(func.body[0].value.value)
