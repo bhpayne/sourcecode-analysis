@@ -167,7 +167,7 @@ def assess_file(filename: str) -> dict:
     assessment_dict['class'] = analysis_of_classes(tree)
 
     # https://stackoverflow.com/questions/4760215/running-shell-command-and-capturing-the-output
-    result = subprocess.run(['python3',file_or_folder,'--help'],
+    result = subprocess.run(['python3',filename,'--help'],
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE)
     help_output_str = result.stdout.decode('utf-8')

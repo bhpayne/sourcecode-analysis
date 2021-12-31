@@ -15,6 +15,37 @@ The JSON file could be used to compare with previous snapshots using `jsondiff`;
 A report about the JSON file can generated using `analyze_json.py`.
 
 
+# Survey of static (offline) analysis for Python
+
+See <https://luminousmen.com/post/python-static-analysis-tools>
+
+### MyPy - type checking of type hints
+<http://mypy-lang.org/>
+
+### Prospector
+<https://prospector.landscape.io/en/master/>
+
+Runs multiple tools, including dodgy, mccabe, pep8, profile-validator, pyflakes, pylint
+
+```
+prospector filename.py
+```
+Produces a report
+
+### Pyflakes
+<https://pypi.org/project/pyflakes/> and <https://pypi.org/project/autoflake/>
+
+```
+pyflakes filename.py
+```
+
+### Pylint
+
+```
+pylint filename.py
+```
+Produces a numeric rating (out of 10). 
+
 # Survey of Dynamic (requires execution) profiling and tracing for Python
 
 <https://pycallgraph.readthedocs.io/en/master/> - creates call graph visualizations for Python applications.
