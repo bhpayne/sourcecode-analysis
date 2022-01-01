@@ -41,22 +41,39 @@ from matplotlib import pyplot as plt
 
 def init_argparse() -> argparse.ArgumentParser:
     """
+    https://docs.python.org/3/howto/argparse.html
+    https://docs.python.org/3/library/argparse.html
     from https://realpython.com/python-command-line-arguments/#argparse
     """
     parser = argparse.ArgumentParser(
         usage="%(prog)s [one or more FILEs or FOLDERs]",
         description="determine whether modules, classes, and functions have a docstring"
     )
+    # required positional argument
+    parser.add_argument('file_or_folder',
+                        nargs='*') # The number of command-line arguments that should be consumed.
+
+    # optional argument
     parser.add_argument(
-        "-v", "--version", action="version",
-        version = f"{parser.prog} version 1.0.0"
+        "-v", "--version",
+#        nargs=None,
+        action="version",
+        version = f"{parser.prog} version 1.0.0" # https://docs.python.org/3/library/argparse.html#prog
     )
-    parser.add_argument('file_or_folder', nargs='*')
+
+    # optional argument
+    parser.add_argument(
+             '--output_json_filename',
+             nargs=1,
+             default=["result"],
+             help="if output filename is not provided, defaults to 'result.json'")
     return parser
 
 def top_level_classes(body):
     """
     find classes in the AST body
+
+    >>> top_level_classes(body)
     """
     return (f for f in body if isinstance(f, ast.ClassDef))
 
@@ -98,6 +115,16 @@ def analysis_of_module(tree) -> dict:
             list_of_imports.append(entry.module)
 
     module_dict['imports'] = list_of_imports
+
+    # does module have  if __name__ == "__main__" ?
+    # https://docs.python.org/3/library/__main__.html
+    # Why this matters: enables the .py to be called by other scripts without executing
+    module_dict['has __name__==__main__'] = False
+    for entry in tree.body:
+        if isinstance(entry, ast.If):
+            if entry.test.left.id == "__name__" or entry.test.left.id == "__main__":
+                module_dict['has __name__==__main__'] = True
+
     return module_dict
 
 def analysis_of_classes(tree) -> dict:
@@ -207,7 +234,7 @@ if __name__ == "__main__":
 
 #    print(assessment_dict)
     # if write to file,
-    with open('result.json', 'w') as fp:
+    with open(args.output_json_filename[0]+'.json', 'w') as fp:
         json.dump(assessment_dict, fp, indent=4, sort_keys=True) # sort_keys enabled to create a consistent ordering that enables comparison between changes
     # else write to stdout
     json.dump(assessment_dict, sys.stdout, indent=4, sort_keys=True)

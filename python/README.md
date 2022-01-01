@@ -3,6 +3,13 @@
 The file `static_offline_python_analysis.py` consumes one or more folders or files
 and then analyses the API of each .py file.
 
+_why this script might be useful_: If you have a collection of Python scripts and want a 
+snapshot of the API, the JSON file contains that snapshot. 
+Unlike the text files produced by Sphinx, the JSON file contains only functions, classes, and associated arguments.
+That way, when you release the next version of your code, you can take another snapshot of the API
+and then diff the old JSON with the new JSON, answering the question, "What changed in the API since the previous release?"
+
+
 `static_offline_python_analysis.py` uses Python's Abstract Syntax Tree (AST);
 see <https://docs.python.org/3/library/ast.html>  
 and <https://greentreesnakes.readthedocs.io/en/latest/>
