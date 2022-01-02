@@ -187,6 +187,9 @@ def analysis_of_functions(tree) -> dict:
     return functions_dict
 
 def assess_file(filename: str) -> dict:
+    """
+    filename: a valid path to a Python file
+    """
     tree = parse_ast_for_filename(filename)
     assessment_dict = {}
     assessment_dict['module'] = analysis_of_module(tree)
