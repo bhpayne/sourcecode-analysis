@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
 
-find ../../../sstsimulator/ -type f -name "*.c*" | xargs grep "^\s*class.*:"
+find /path/to/project/files/ -type f -name "*.c*" | xargs grep "^\s*class.*:"
