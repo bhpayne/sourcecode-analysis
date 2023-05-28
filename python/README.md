@@ -26,6 +26,15 @@ A report about the JSON file can generated using `analyze_json.py`.
 
 See <https://luminousmen.com/post/python-static-analysis-tools>
 
+<http://furius.ca/snakefood/>
+
+<https://github.com/davidfraser/pyan>
+
+AST parsing
+<http://blog.prashanthellina.com/generating-call-graphs-for-understanding-and-refactoring-python-code.html>
+
+<https://pycallgraph.readthedocs.io/en/master/>
+
 ### MyPy - type checking of type hints
 <http://mypy-lang.org/>
 
